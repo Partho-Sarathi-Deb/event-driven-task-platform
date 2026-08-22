@@ -30,5 +30,20 @@ A decoupled, event-driven microservices backend built with Python, FastAPI, Rabb
 
 ### 1. Start RabbitMQ Container
 
-```bash
 docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+
+### 2. Run Task Service
+
+cd task-service
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+
+### 3. Run Notification Service
+
+cd notification-service
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+python consumer.py
