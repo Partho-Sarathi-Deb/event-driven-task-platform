@@ -1,16 +1,22 @@
-# Virtual Environments
+# Environments
 venv/
 .venv/
 env/
+*/venv/
+*/.venv/
 
-# SQLite Databases
-*.db
-*.sqlite3
-
-# Python Bytecode
+# Python Cache
 __pycache__/
 *.pyc
+*.pyo
 
-# IDE Settings
+# SQLite Databases & Local Files
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE / OS junk
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
