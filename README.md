@@ -42,13 +42,3 @@ python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
 python consumer.py
-
----
-
-### Step 2: Generate `requirements.txt` Files
-
-Run these two commands so the `pip install -r requirements.txt` step actually works for anyone cloning your repository:
-
-1. **In Terminal 1 (`task-service` with active `venv`):**
-   ```cmd
-   pip freeze > requirements.txt
