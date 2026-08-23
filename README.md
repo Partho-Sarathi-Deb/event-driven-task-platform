@@ -54,11 +54,23 @@ docker-compose up --build
 
 Create a new task via curl to trigger an asynchronous RabbitMQ event:
 
+```
 curl -X POST http://localhost:8000/tasks -H "Content-Type: application/json" -d "{\"title\": \"Build README\", \"description\": \"Document the docker setup\"}"
 
+```
 Check the notification-service logs to confirm event consumption:
 
 docker-compose logs notification-service --tail 20
+
+---
+
+## Stopping the Application
+
+To stop all running services without deleting database data:
+
+```cmd
+docker-compose down
+```
 
 ---
 
