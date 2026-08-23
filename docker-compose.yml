@@ -1,13 +1,30 @@
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: taskdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d taskdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3-management-alpine
     container_name: rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
 
@@ -17,9 +34,11 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/taskdb
       - RABBITMQ_HOST=rabbitmq
-      - PYTHONBUFFERED=1
     depends_on:
+      postgres:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
 
@@ -27,8 +46,13 @@ services:
     build: ./notification-service
     container_name: notification-service
     environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/taskdb
       - RABBITMQ_HOST=rabbitmq
-      - PYTHONUNBUFFERED=1
     depends_on:
+      postgres:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
+
+volumes:
+  postgres_data:

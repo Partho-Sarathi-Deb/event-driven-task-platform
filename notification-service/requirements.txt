@@ -2,3 +2,4 @@ sqlalchemy
 pika
 pydantic
 pytest
+psycopg2-binary

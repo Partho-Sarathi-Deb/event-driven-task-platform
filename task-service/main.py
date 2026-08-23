@@ -1,10 +1,16 @@
 import json
 import pika
 import os
+import models
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import create_engine, Column, Integer, String, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
+from database import engine, Base, get_db
+
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI()
 
 # 1. SQLite Database Connection Setup
 DATABASE_URL = "sqlite:///./tasks.db"
@@ -69,8 +75,8 @@ def publish_event(event_type: str, data: dict):
         # Declare fanout exchange named 'task_events'
         channel.exchange_declare(exchange="task_events", exchange_type="fanout")
 
-        message = json.dumps({"event": event_type, "data": data})
-        channel.basic_publish(exchange="task_events", routing_key="", body=message)
+        message = json.dumps({"event_type": event_type, "data": data, "payload": payload})
+        channel.basic_publish(exchange="", routing_key="task_events", body=message)
 
         connection.close()
     except Exception as e:
@@ -78,27 +84,21 @@ def publish_event(event_type: str, data: dict):
 
 
 # 5. REST API Endpoints
-@app.post("/tasks", response_model=TaskResponse, status_code=201)
-def create_task(task: TaskCreate, db: Session = Depends(get_db)):
-    db_task = TaskModel(title=task.title, description=task.description)
+@app.post("/tasks")
+def create_task(title: str, description: str = None, db: Session = Depends(get_db)):
+    db_task = models.Task(title=title, description=description)
     db.add(db_task)
     db.commit()
     db.refresh(db_task)
-
-    event_payload = {
-        "id": db_task.id,
-        "title": db_task.title,
-        "description": db_task.description,
-        "completed": db_task.completed,
-    }
-    publish_event("TASK_CREATED", event_payload)
-
+    
+    # Publish event after DB insertion
+    publish_event("task_created", {"id": db_task.id, "title": db_task.title})
     return db_task
 
 
-@app.get("/tasks", response_model=list[TaskResponse])
-def get_tasks(db: Session = Depends(get_db)):
-    return db.query(TaskModel).all()
+@app.get("/tasks")
+def list_tasks(db: Session = Depends(get_db)):
+    return db.query(models.Task).all()
 
 
 @app.get("/tasks/{task_id}", response_model=TaskResponse)

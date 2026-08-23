@@ -5,3 +5,4 @@ pika
 pydantic
 pytest
 httpx
+psycopg2-binary
