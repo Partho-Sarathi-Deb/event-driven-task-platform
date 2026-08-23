@@ -63,7 +63,7 @@ docker-compose logs notification-service --tail 20
 ---
 
 ## Repository Structure
-
+```
 ├── docker-compose.yml
 ├── task-service/
 │   ├── main.py
@@ -73,3 +73,4 @@ docker-compose logs notification-service --tail 20
     ├── consumer.py
     ├── Dockerfile
     └── requirements.txt
+```
