@@ -11,8 +11,23 @@ jobs:
     name: Test Task Service
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: taskdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
-      - name: Checkout repository code
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -27,6 +42,9 @@ jobs:
           pip install -r task-service/requirements.txt
 
       - name: Run task-service tests
+        env:
+          DATABASE_URL: postgresql://user:password@localhost:5432/taskdb
+          RABBITMQ_HOST: localhost
         run: |
           pytest task-service/
 
@@ -34,8 +52,23 @@ jobs:
     name: Test Notification Service
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: taskdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
-      - name: Checkout repository code
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -50,5 +83,8 @@ jobs:
           pip install -r notification-service/requirements.txt
 
       - name: Run notification-service tests
+        env:
+          DATABASE_URL: postgresql://user:password@localhost:5432/taskdb
+          RABBITMQ_HOST: localhost
         run: |
           pytest notification-service/
