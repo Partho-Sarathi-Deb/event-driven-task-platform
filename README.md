@@ -22,7 +22,7 @@ An event-driven microservices platform built with FastAPI, RabbitMQ, PostgreSQL,
 +-----------------------+
 |      PostgreSQL       | (Database)
 +-----------------------+
-
+'''
 * task-service: Handles CRUD operations for tasks and emits events (task_created, task_updated, task_deleted) to RabbitMQ.
 * rabbitmq: Acts as the message broker, broadcasting events via fanout exchange.
 * notification-service: Background worker consuming events and persisting audit logs to PostgreSQL.
