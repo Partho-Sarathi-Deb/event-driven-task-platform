@@ -37,9 +37,9 @@ An event-driven microservices platform built with FastAPI, RabbitMQ, PostgreSQL,
 
 ### 1. Run the Application
 Spin up all microservices, message broker, and database with a single command:
-
+```
 docker-compose up --build
-
+```
 ### 2. Verify Services
 
 | Service | Endpoint / Access | Description |
