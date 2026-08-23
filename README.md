@@ -60,8 +60,10 @@ curl -X POST http://localhost:8000/tasks -H "Content-Type: application/json" -d 
 ```
 Check the notification-service logs to confirm event consumption:
 
+```
 docker-compose logs notification-service --tail 20
 
+```
 ---
 
 ## Stopping the Application
