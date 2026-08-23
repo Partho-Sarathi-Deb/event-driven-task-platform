@@ -3,7 +3,7 @@
 An event-driven microservices platform built with FastAPI, RabbitMQ, PostgreSQL, and Docker Compose.
 
 ## Architecture Overview
-
+'''
 +-----------------------+
 |     task-service      | (FastAPI)
 +-----------+-----------+
