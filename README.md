@@ -46,7 +46,7 @@ docker-compose up --build
 | :--- | :--- | :--- |
 | Task API Docs | http://localhost:8000/docs | Interactive Swagger UI |
 | RabbitMQ Management | http://localhost:15672 | User: guest / Pass: guest |
-| PostgreSQL | localhost:5432 | User: app_user / DB: task_platform |
+| PostgreSQL | localhost:5432 | User: app_user / Pass: app_password / DB: task_platform |
 
 ---
 
