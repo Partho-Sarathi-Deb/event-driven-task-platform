@@ -3,7 +3,7 @@
 An event-driven microservices platform built with FastAPI, RabbitMQ, PostgreSQL, and Docker Compose.
 
 ## Architecture Overview
-
+```
 +-----------------------+
 |     task-service      | (FastAPI)
 +-----------+-----------+
@@ -22,7 +22,7 @@ An event-driven microservices platform built with FastAPI, RabbitMQ, PostgreSQL,
 +-----------------------+
 |      PostgreSQL       | (Database)
 +-----------------------+
-
+```
 * task-service: Handles CRUD operations for tasks and emits events (task_created, task_updated, task_deleted) to RabbitMQ.
 * rabbitmq: Acts as the message broker, broadcasting events via fanout exchange.
 * notification-service: Background worker consuming events and persisting audit logs to PostgreSQL.
@@ -37,16 +37,16 @@ An event-driven microservices platform built with FastAPI, RabbitMQ, PostgreSQL,
 
 ### 1. Run the Application
 Spin up all microservices, message broker, and database with a single command:
-
+```
 docker-compose up --build
-
+```
 ### 2. Verify Services
 
 | Service | Endpoint / Access | Description |
 | :--- | :--- | :--- |
 | Task API Docs | http://localhost:8000/docs | Interactive Swagger UI |
 | RabbitMQ Management | http://localhost:15672 | User: guest / Pass: guest |
-| PostgreSQL | localhost:5432 | User: app_user / DB: task_platform |
+| PostgreSQL | localhost:5432 | User: app_user / Pass: app_password / DB: task_platform |
 
 ---
 
@@ -54,16 +54,30 @@ docker-compose up --build
 
 Create a new task via curl to trigger an asynchronous RabbitMQ event:
 
+```
 curl -X POST http://localhost:8000/tasks -H "Content-Type: application/json" -d "{\"title\": \"Build README\", \"description\": \"Document the docker setup\"}"
 
+```
 Check the notification-service logs to confirm event consumption:
 
+```
 docker-compose logs notification-service --tail 20
+
+```
+---
+
+## Stopping the Application
+
+To stop all running services without deleting database data:
+
+```cmd
+docker-compose down
+```
 
 ---
 
 ## Repository Structure
-
+```
 ├── docker-compose.yml
 ├── task-service/
 │   ├── main.py
@@ -73,3 +87,4 @@ docker-compose logs notification-service --tail 20
     ├── consumer.py
     ├── Dockerfile
     └── requirements.txt
+```
