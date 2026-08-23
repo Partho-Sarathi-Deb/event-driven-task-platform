@@ -1,49 +1,75 @@
-# Event-Driven Microservices Task Platform
+# Event-Driven Task Management Platform
 
-A decoupled, event-driven microservices backend built with Python, FastAPI, RabbitMQ, and SQLAlchemy.
+An event-driven microservices platform built with FastAPI, RabbitMQ, PostgreSQL, and Docker Compose.
+
+## Architecture Overview
+
++-----------------------+
+|     task-service      | (FastAPI)
++-----------+-----------+
+            | Publishes Events
+            v
++-----------------------+
+|       RabbitMQ        | (Exchange: task_events)
++-----------+-----------+
+            | Consumes Events
+            v
++-----------------------+
+| notification-service  | (Consumer)
++-----------+-----------+
+            | Persists Audit Logs
+            v
++-----------------------+
+|      PostgreSQL       | (Database)
++-----------------------+
+
+* task-service: Handles CRUD operations for tasks and emits events (task_created, task_updated, task_deleted) to RabbitMQ.
+* rabbitmq: Acts as the message broker, broadcasting events via fanout exchange.
+* notification-service: Background worker consuming events and persisting audit logs to PostgreSQL.
+* postgres: Central relational database storage.
 
 ---
 
-## 🏗️ Architecture Overview
-
-* **Task Service (REST API):** Manages task lifecycles (CRUD operations) using FastAPI and SQLite. Publishes events (`TASK_CREATED`, `TASK_UPDATED`, `TASK_DELETED`) to RabbitMQ upon state changes.
-* **Message Broker (RabbitMQ):** Implements a `fanout` exchange (`task_events`) for asynchronous message passing and service decoupling.
-* **Notification Service (Consumer):** Listens for task events in real-time and persists audit logs into an independent SQLite database.
-
----
-
-## 🛠️ Tech Stack
-
-* **Framework:** FastAPI, Python 3.10+
-* **Messaging:** RabbitMQ, Pika
-* **ORM & Database:** SQLAlchemy, SQLite
-* **Architecture:** Microservices, Event-Driven Architecture (EDA), Publish-Subscribe Pattern
-
----
-
-## 🚀 Getting Started
+## Quick Start (Docker)
 
 ### Prerequisites
+* Docker Desktop installed and running.
 
-* [Docker Desktop](https://www.docker.com/) (for running RabbitMQ)
-* Python 3.10+
+### 1. Run the Application
+Spin up all microservices, message broker, and database with a single command:
 
-### 1. Start RabbitMQ Container
+docker-compose up --build
 
-docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+### 2. Verify Services
 
-### 2. Run Task Service
+| Service | Endpoint / Access | Description |
+| :--- | :--- | :--- |
+| Task API Docs | http://localhost:8000/docs | Interactive Swagger UI |
+| RabbitMQ Management | http://localhost:15672 | User: guest / Pass: guest |
+| PostgreSQL | localhost:5432 | User: app_user / DB: task_platform |
 
-cd task-service
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+---
 
-### 3. Run Notification Service
+## Testing Event Flow
 
-cd notification-service
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-python consumer.py
+Create a new task via curl to trigger an asynchronous RabbitMQ event:
+
+curl -X POST http://localhost:8000/tasks -H "Content-Type: application/json" -d "{\"title\": \"Build README\", \"description\": \"Document the docker setup\"}"
+
+Check the notification-service logs to confirm event consumption:
+
+docker-compose logs notification-service --tail 20
+
+---
+
+## Repository Structure
+
+├── docker-compose.yml
+├── task-service/
+│   ├── main.py
+│   ├── Dockerfile
+│   └── requirements.txt
+└── notification-service/
+    ├── consumer.py
+    ├── Dockerfile
+    └── requirements.txt
