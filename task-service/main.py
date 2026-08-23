@@ -2,7 +2,7 @@ import json
 import pika
 import os
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import create_engine, Column, Integer, String, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
@@ -33,13 +33,11 @@ class TaskCreate(BaseModel):
 
 
 class TaskResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     title: str
-    description: str | None
+    description: str | None = None
     completed: bool
-
-    class Config:
-        from_attributes = True
 
 
 class TaskUpdate(BaseModel):

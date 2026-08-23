@@ -3,3 +3,5 @@ uvicorn
 sqlalchemy
 pika
 pydantic
+pytest
+httpx

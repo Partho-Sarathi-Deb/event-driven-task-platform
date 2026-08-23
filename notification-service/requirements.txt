@@ -1,4 +1,4 @@
 sqlalchemy
 pika
 pydantic
-
+pytest
