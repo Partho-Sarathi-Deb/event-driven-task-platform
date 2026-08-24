@@ -58,7 +58,7 @@ task-platform/
 ### Running with Docker Compose
 
 1. Clone the repository:
-   git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git
+   git clone https://github.com/Partho-Sarathi-Deb/event-driven-task-platform.git
    cd task-platform
 
 2. Build and start all services:
