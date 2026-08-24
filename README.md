@@ -1,90 +1,105 @@
 # Event-Driven Task Management Platform
 
-An event-driven microservices platform built with FastAPI, RabbitMQ, PostgreSQL, and Docker Compose.
+An event-driven microservices platform built with **FastAPI**, **PostgreSQL**, **RabbitMQ**, and **Docker**. Designed with clean architecture, containerized isolation, asynchronous messaging, and automated CI pipelines.
+
+---
 
 ## Architecture Overview
-```
-+-----------------------+
-|     task-service      | (FastAPI)
-+-----------+-----------+
-            | Publishes Events
-            v
-+-----------------------+
-|       RabbitMQ        | (Exchange: task_events)
-+-----------+-----------+
-            | Consumes Events
-            v
-+-----------------------+
-| notification-service  | (Consumer)
-+-----------+-----------+
-            | Persists Audit Logs
-            v
-+-----------------------+
-|      PostgreSQL       | (Database)
-+-----------------------+
-```
-* task-service: Handles CRUD operations for tasks and emits events (task_created, task_updated, task_deleted) to RabbitMQ.
-* rabbitmq: Acts as the message broker, broadcasting events via fanout exchange.
-* notification-service: Background worker consuming events and persisting audit logs to PostgreSQL.
-* postgres: Central relational database storage.
+
+* **Task Service (FastAPI + PostgreSQL):** REST API for managing tasks. Publishes event payloads (`TASK_CREATED`, `TASK_UPDATED`, `TASK_DELETED`) to RabbitMQ upon database modifications.
+* **Notification Service (FastAPI + PostgreSQL):** Asynchronous background consumer that listens to RabbitMQ queues and logs task events into an audit log database.
+* **Message Broker (RabbitMQ):** Facilitates decoupled, asynchronous communication between microservices.
+* **Database (PostgreSQL):** Persistent relational storage for tasks and event logs.
 
 ---
 
-## Quick Start (Docker)
+## Tech Stack
+```
+| Component | Technology |
+| --- | --- |
+| **Language** | Python 3.12 |
+| **Framework** | FastAPI, Uvicorn |
+| **Database** | PostgreSQL, SQLAlchemy (ORM) |
+| **Messaging** | RabbitMQ, Pika |
+| **Containerization** | Docker, Docker Compose |
+| **Testing & CI** | Pytest, GitHub Actions |
+```
+---
+
+## Project Structure
+```
+task-platform/
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+├── task-service/
+│   ├── database.py
+│   ├── main.py
+│   ├── models.py
+│   ├── requirements.txt
+│   └── test_main.py
+├── notification-service/
+│   ├── database.py
+│   ├── main.py
+│   ├── models.py
+│   ├── requirements.txt
+│   └── test_main.py
+├── docker-compose.yml
+└── README.md
+```
+---
+
+## Getting Started
 
 ### Prerequisites
-* Docker Desktop installed and running.
+* Docker Desktop installed and running
+* Git
 
-### 1. Run the Application
-Spin up all microservices, message broker, and database with a single command:
-```
-docker-compose up --build
-```
-### 2. Verify Services
+### Running with Docker Compose
 
-| Service | Endpoint / Access | Description |
-| :--- | :--- | :--- |
-| Task API Docs | http://localhost:8000/docs | Interactive Swagger UI |
-| RabbitMQ Management | http://localhost:15672 | User: guest / Pass: guest |
-| PostgreSQL | localhost:5432 | User: app_user / Pass: app_password / DB: task_platform |
+1. Clone the repository:
+   git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git
+   cd task-platform
 
----
+2. Build and start all services:
+   docker-compose up --build
 
-## Testing Event Flow
-
-Create a new task via curl to trigger an asynchronous RabbitMQ event:
-
-```
-curl -X POST http://localhost:8000/tasks -H "Content-Type: application/json" -d "{\"title\": \"Build README\", \"description\": \"Document the docker setup\"}"
-
-```
-Check the notification-service logs to confirm event consumption:
-
-```
-docker-compose logs notification-service --tail 20
-
-```
----
-
-## Stopping the Application
-
-To stop all running services without deleting database data:
-
-```cmd
-docker-compose down
-```
+3. Access Interactive API Docs (Swagger UI):
+   * Task Service: http://localhost:8000/docs
+   * Notification Service: http://localhost:8001/docs
+   * RabbitMQ Management Dashboard: http://localhost:15672 (Guest / Guest)
 
 ---
 
-## Repository Structure
-```
-├── docker-compose.yml
-├── task-service/
-│   ├── main.py
-│   ├── Dockerfile
-│   └── requirements.txt
-└── notification-service/
-    ├── consumer.py
-    ├── Dockerfile
-    └── requirements.txt
-```
+## Local Development & Testing
+
+### Running Tests Locally
+
+1. Set up a virtual environment:
+   python -m venv venv
+   # On Windows:
+   .\venv\Scripts\activate
+   # On macOS/Linux:
+   source venv/bin/activate
+
+2. Install dependencies:
+   pip install -r task-service/requirements.txt
+   pip install -r notification-service/requirements.txt
+
+3. Run tests via pytest:
+   pytest task-service/
+   pytest notification-service/
+
+---
+
+## Continuous Integration (CI)
+
+This project uses GitHub Actions to automate unit testing on every push or pull request to the main branch. 
+
+Workflows run isolated unit tests using an in-memory SQLite configuration and mock messaging interfaces to ensure reliability across builds.
+
+---
+
+## License
+
+This project is open-source and available under the MIT License.
