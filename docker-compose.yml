@@ -1,24 +1,20 @@
 services:
   postgres:
-    image: postgres:15-alpine
-    container_name: postgres
+    image: postgres:15
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: taskdb
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-taskdb}
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d taskdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-taskdb}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: rabbitmq
+    image: rabbitmq:3-management
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -30,12 +26,11 @@ services:
 
   task-service:
     build: ./task-service
-    container_name: task-service
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://user:password@postgres:5432/taskdb
-      - RABBITMQ_HOST=rabbitmq
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-taskdb}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,15 +39,14 @@ services:
 
   notification-service:
     build: ./notification-service
-    container_name: notification-service
+    ports:
+      - "8001:8001"
     environment:
-      - DATABASE_URL=postgresql://user:password@postgres:5432/taskdb
-      - RABBITMQ_HOST=rabbitmq
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-taskdb}
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
 
-volumes:
-  postgres_data:
