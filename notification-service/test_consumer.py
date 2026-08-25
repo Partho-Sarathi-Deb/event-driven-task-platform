@@ -1,21 +1,29 @@
-import json
 import pytest
+import json
+from consumer import process_message
 
-# Example handler processing function from your consumer logic
-def process_event_payload(body_bytes: bytes) -> dict:
-    data = json.loads(body_bytes.decode("utf-8"))
-    if "event_type" not in data or "payload" not in data:
-        raise ValueError("Invalid event schema")
-    return data
-
-def test_process_valid_event():
-    raw_message = b'{"event_type": "task_created", "payload": {"id": 1, "title": "Test Task"}}'
-    result = process_event_payload(raw_message)
+def test_process_message_actual_producer_schema():
+    # Matches exact JSON produced by task-service/main.py
+    producer_payload = json.dumps({
+        "event_type": "TASK_CREATED",
+        "payload": {
+            "id": 42,
+            "title": "Fix Consumer Bugs",
+            "description": "Nested payload verification"
+        }
+    }).encode("utf-8")
     
-    assert result["event_type"] == "task_created"
-    assert result["payload"]["id"] == 1
+    result = process_message(producer_payload)
+    
+    assert result["event_type"] == "TASK_CREATED"
+    assert result["task_id"] == 42
+    assert "Fix Consumer Bugs" in result["message"]
 
-def test_process_invalid_event_schema():
-    raw_message = b'{"invalid_key": "no_event_type"}'
-    with pytest.raises(ValueError, match="Invalid event schema"):
-        process_event_payload(raw_message)
+def test_process_message_missing_id():
+    invalid_payload = json.dumps({
+        "event_type": "TASK_CREATED",
+        "payload": {"title": "No ID field"}
+    }).encode("utf-8")
+    
+    with pytest.raises(ValueError):
+        process_message(invalid_payload)

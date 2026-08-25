@@ -1,48 +1,56 @@
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
-from unittest.mock import patch
-
-from database import Base, get_db
-import models
 from main import app
-
-# Set up SQLite in-memory engine
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-app.dependency_overrides[get_db] = override_get_db
-
-@pytest.fixture(autouse=True)
-def setup_db():
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
 
 client = TestClient(app)
 
-@patch("main.publish_event")
-def test_create_task(mock_publish):
-    # Pass JSON body instead of URL query parameters
-    payload = {"title": "Test Task", "description": "Testing"}
-    response = client.post("/tasks", json=payload)
-    
+def test_create_task():
+    response = client.post("/tasks/", json={"title": "Test Task", "description": "Test Description"})
+    assert response.status_code in [200, 201]
+    data = response.json()
+    assert data["title"] == "Test Task"
+    assert "id" in data
+
+def test_get_all_tasks():
+    response = client.get("/tasks/")
     assert response.status_code == 200
-    assert response.json()["title"] == "Test Task"
-    assert "id" in response.json()
-    mock_publish.assert_called_once()
+    assert isinstance(response.json(), list)
+
+def test_get_task_by_id_success():
+    create_res = client.post("/tasks/", json={"title": "Fetch Me", "description": "To be fetched"})
+    task_id = create_res.json()["id"]
+
+    response = client.get(f"/tasks/{task_id}")
+    assert response.status_code == 200
+    assert response.json()["title"] == "Fetch Me"
+
+def test_get_task_by_id_not_found():
+    response = client.get("/tasks/999999")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Task not found"
+
+def test_update_task_success():
+    create_res = client.post("/tasks/", json={"title": "Old Title", "description": "Old Desc"})
+    task_id = create_res.json()["id"]
+
+    response = client.put(f"/tasks/{task_id}", json={"title": "New Title", "description": "Updated Desc"})
+    assert response.status_code == 200
+    assert response.json()["title"] == "New Title"
+
+def test_update_task_not_found():
+    response = client.put("/tasks/999999", json={"title": "Ghost Task", "description": "Does not exist"})
+    assert response.status_code == 404
+
+def test_delete_task_success():
+    create_res = client.post("/tasks/", json={"title": "Delete Me", "description": "To be deleted"})
+    task_id = create_res.json()["id"]
+
+    response = client.delete(f"/tasks/{task_id}")
+    assert response.status_code in [200, 204]
+
+    get_res = client.get(f"/tasks/{task_id}")
+    assert get_res.status_code == 404
+
+def test_delete_task_not_found():
+    response = client.delete("/tasks/999999")
+    assert response.status_code == 404

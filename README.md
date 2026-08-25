@@ -1,105 +1,112 @@
-# Event-Driven Task Management Platform
+# Task Platform - Event-Driven Microservices
 
-An event-driven microservices platform built with **FastAPI**, **PostgreSQL**, **RabbitMQ**, and **Docker**. Designed with clean architecture, containerized isolation, asynchronous messaging, and automated CI pipelines.
+An event-driven microservice architecture built with FastAPI, RabbitMQ, PostgreSQL, and Docker Compose.
+
+The system consists of two primary services:
+* Task Service: Manages tasks, persists data to PostgreSQL, and publishes asynchronous TASK_CREATED events to RabbitMQ.
+* Notification Service: Runs a background consumer thread that listens to RabbitMQ, consuming task events asynchronously.
 
 ---
 
 ## Architecture Overview
+```
+[Client] ---> (POST /tasks) ---> [Task Service] ---> (Write) ---> [PostgreSQL]
+                                       |
+                               (Publish Event)
+                                       v
+                                 [RabbitMQ]
+                                       |
+                               (Consume Event)
+                                       v
+                            [Notification Service]
+```
+---
 
-* **Task Service (FastAPI + PostgreSQL):** REST API for managing tasks. Publishes event payloads (`TASK_CREATED`, `TASK_UPDATED`, `TASK_DELETED`) to RabbitMQ upon database modifications.
-* **Notification Service (FastAPI + PostgreSQL):** Asynchronous background consumer that listens to RabbitMQ queues and logs task events into an audit log database.
-* **Message Broker (RabbitMQ):** Facilitates decoupled, asynchronous communication between microservices.
-* **Database (PostgreSQL):** Persistent relational storage for tasks and event logs.
+## Prerequisites
+
+* Docker & Docker Compose
+* curl or Postman (for API testing)
 
 ---
 
-## Tech Stack
+## Quick Start
+
+### 1. Run the Platform
+
+Clone the repository and start all containers in detached mode:
 ```
-| Component | Technology |
-| --- | --- |
-| **Language** | Python 3.12 |
-| **Framework** | FastAPI, Uvicorn |
-| **Database** | PostgreSQL, SQLAlchemy (ORM) |
-| **Messaging** | RabbitMQ, Pika |
-| **Containerization** | Docker, Docker Compose |
-| **Testing & CI** | Pytest, GitHub Actions |
+docker-compose up -d --build
+```
+Docker Compose will build the services and ensure postgres and rabbitmq health checks pass before launching task-service and notification-service.
+
+### 2. Verify Container Health
+
+Check that all containers are healthy and running:
+```
+docker-compose ps
+```
+---
+
+## Service Endpoints
+```
+| Service | Protocol / Port | Base URL / Description |
+|---|---|---|
+| Task Service | HTTP / 8000 | http://localhost:8000 |
+| Notification Service | HTTP / 8001 | http://localhost:8001 |
+| RabbitMQ Management | AMQP / 5672, HTTP / 15672 | http://localhost:15672 (guest / guest) |
+| PostgreSQL | TCP / 5432 | Internal network |
+```
+---
+
+## Testing the End-to-End Pipeline
+
+### Step 1: Create a Task (Task Service)
+
+Send a POST request to task-service to create a new task:
+```
+curl -X POST "http://localhost:8000/tasks" -H "Content-Type: application/json" -d "{\"title\": \"Build Pipeline\", \"description\": \"Verify microservices messaging\"}"
+```
+Expected Response (200 OK):
+```
+{"id": 1, "title": "Build Pipeline", "description": "Verify microservices messaging"}
+```
+### Step 2: Verify Message Consumption (Notification Service)
+
+Inspect the logs of notification-service to confirm the background thread consumed the event:
+```
+docker-compose logs notification-service
+```
+Expected Log Output:
+```
+[*] Consumer active and waiting for messages...
+[x] Successfully processed: [TASK_CREATED] Notification processed for task #1: 'Build Pipeline'
 ```
 ---
 
 ## Project Structure
 ```
 task-platform/
-├── .github/
-│   └── workflows/
-│       └── ci.yml
-├── task-service/
-│   ├── database.py
-│   ├── main.py
-│   ├── models.py
-│   ├── requirements.txt
-│   └── test_main.py
-├── notification-service/
-│   ├── database.py
-│   ├── main.py
-│   ├── models.py
-│   ├── requirements.txt
-│   └── test_main.py
 ├── docker-compose.yml
-└── README.md
+├── task-service/
+│   ├── main.py
+│   ├── publisher.py
+│   ├── Dockerfile
+│   └── requirements.txt
+└── notification-service/
+    ├── main.py
+    ├── consumer.py
+    ├── Dockerfile
+    └── requirements.txt
 ```
 ---
 
-## Getting Started
+## Stopping the Services
 
-### Prerequisites
-* Docker Desktop installed and running
-* Git
-
-### Running with Docker Compose
-
-1. Clone the repository:
-   git clone https://github.com/Partho-Sarathi-Deb/event-driven-task-platform.git
-   cd task-platform
-
-2. Build and start all services:
-   docker-compose up --build
-
-3. Access Interactive API Docs (Swagger UI):
-   * Task Service: http://localhost:8000/docs
-   * Notification Service: http://localhost:8001/docs
-   * RabbitMQ Management Dashboard: http://localhost:15672 (Guest / Guest)
-
----
-
-## Local Development & Testing
-
-### Running Tests Locally
-
-1. Set up a virtual environment:
-   python -m venv venv
-   # On Windows:
-   .\venv\Scripts\activate
-   # On macOS/Linux:
-   source venv/bin/activate
-
-2. Install dependencies:
-   pip install -r task-service/requirements.txt
-   pip install -r notification-service/requirements.txt
-
-3. Run tests via pytest:
-   pytest task-service/
-   pytest notification-service/
-
----
-
-## Continuous Integration (CI)
-
-This project uses GitHub Actions to automate unit testing on every push or pull request to the main branch. 
-
-Workflows run isolated unit tests using an in-memory SQLite configuration and mock messaging interfaces to ensure reliability across builds.
-
----
-
-## License
-
-This project is open-source and available under the MIT License.
+To shut down containers and remove networks:
+```
+docker-compose down
+```
+To perform a complete teardown (including persistent database volumes):
+```
+docker-compose down -v
+```

@@ -2,14 +2,14 @@ services:
   postgres:
     image: postgres:15
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-taskdb}
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: taskdb
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-taskdb}"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U user -d taskdb"]
+      interval: 3s
       timeout: 5s
       retries: 5
 
@@ -29,24 +29,22 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-taskdb}
-      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - DATABASE_URL=postgresql://user:password@postgres:5432/taskdb
+      - RABBITMQ_HOST=rabbitmq
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+
 
   notification-service:
     build: ./notification-service
     ports:
       - "8001:8001"
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-taskdb}
-      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - PYTHONUNBUFFERED=1
+      - RABBITMQ_HOST=rabbitmq
     depends_on:
-      postgres:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
-
