@@ -1,6 +1,15 @@
 import pytest
 from fastapi.testclient import TestClient
 from main import app
+from database import Base, engine
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_database():
+    """Create tables directly — TestClient doesn't trigger the app's
+    lifespan startup event unless used as a context manager, so table
+    creation can't rely on main.py's lifespan hook here."""
+    Base.metadata.create_all(bind=engine)
+    yield
 
 client = TestClient(app)
 
